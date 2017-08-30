@@ -1,0 +1,285 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Carousel</title>      
+        <link href="style.css" rel="stylesheet" type="text/css">
+		<script type="text/javascript" src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+		<script>
+			var lat; 
+			var lon;
+			var max;
+			
+		function populate(){
+			var counties = ["Antrim","Armagh","Carlow","Cavan","Clare","Cork","Derry","Donegal","Down","Dublin","Fermanagh","Galway","Kerry","Kildare","Kilkenny",
+			"Laois","Leitrim","Limerick","Longford","Louth","Mayo","Meath","Monaghan","Offaly","Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath",
+			"Wexford","Wicklow"];
+				
+				var sel = document.getElementById("counties")
+				for (i = 0; i < 32; i++) {
+					if (sel) {
+						if (counties[i] == "Antrim" || counties[i] == "Armagh" || counties[i] == "Down" || counties[i] == "Fermanagh"|| counties[i] == "Tyrone" || counties[i] == "Londonderry Derry"){
+							sel.options[sel.options.length] = new Option(counties[i] + ",United Kingdom");
+						}
+						else{
+							sel.options[sel.options.length] = new Option(counties[i] + ",Ireland");
+						}
+					}
+				}
+		}
+		</script>
+    </head>
+
+    <body onload="populate()">
+    	<div class="sidediv">
+			 <p class="tags">Location</p>
+			<select class="combo" id="counties" onchange="mapRequest()">
+				<option value="">------</option>
+			</select>
+            <p class="tags"> Tags </p>
+            <form id="textFieldArea">
+            	<input type="text" id="tb0" class="textfield" placeholder="Search">
+            </form>
+             <button class="addTextField" id="newTextFieldButton" onClick="addTextField()">+</button>
+			 <input type="button" class="button" id="search" value="Find Images">
+			<div id="googleMap" class="map" style="visibility: hidden;"></div>
+
+			<script>
+			function myMap() {
+			
+			var mapProp= {
+				center:new google.maps.LatLng(lat, lon),
+				disableDefaultUI: true,
+				zoom:7,
+				draggable: false
+			};
+			
+			
+			var myCenter = new google.maps.LatLng(lat,lon);
+			var marker = new google.maps.Marker({
+				position:myCenter, 
+				animation:google.maps.Animation.BOUNCE,
+				});
+  
+			var map=new google.maps.Map(document.getElementById("googleMap"),mapProp);
+			marker.setMap(map);
+			}
+			</script>
+
+			<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBAx59QQOuaTRZyKCUprfFwhi821nK3pxA&callback=myMap"></script>
+        </div>
+    	<div id="OuterDiv" class="outerdiv">
+        	<div id="Main" class="mainDiv">
+            	<div class="leftArrowMain" onClick="PrevImage()"></div>
+                <div class="rightArrowMain" onClick="NextImage()"></div>
+            </div>
+        	<div id="innerDiv" class="innerdiv">
+            	<div class="leftArrow" onClick="PrevImage()"></div>
+                <div class="rightArrow" onClick="NextImage()"></div>
+            	<div id="left" class="innerDivSection" style="opacity:0.1" onClick="PrevImage()"></div>
+                <div id="middle" class="innerDivSection"></div>
+                <div id="right" class="innerDivSection" style="opacity:0.1" onClick="NextImage()"></div>
+            </div>
+        </div>	
+        <script>
+			var textboxnum = 1;
+			var imageNum = 1;
+			var textFields = [];
+			var searchTerm = document.getElementById('tb0').value;
+			document.getElementById('search').onclick = load;	
+			box = "searchBox"
+			
+			function load(){
+				setInterval(document.getElementById('search').value = "Loading ...", 5000);
+				setInterval(document.getElementById('search').disabled = true, 5000);
+				getPhotos();
+				setTimeout(revert, 5000);
+			}
+			function revert(){
+				document.getElementById('search').value = "Find Images";
+				document.getElementById('search').disabled = false;
+			}
+			function constructSearch(){
+				searchTerm = document.getElementById('tb0').value;
+				for(i = 0; i < textFields.length; i++){
+					id = textFields[i];
+					box = document.getElementById(id).value;
+					searchTerm += "+" + box;
+				}
+			}		
+			function deleteTextField(element){
+				var id = (element.id).slice(5);
+				var ele = document.getElementsByTagName('form')[0];
+				remove = "tb"+id;
+				removeButton = "deltb"+id;
+				var elem = document.getElementById(remove);
+				var elemButton = document.getElementById(removeButton);
+				elem.remove();
+				elemButton.remove();
+				var index = textFields.indexOf(remove);
+				textFields.splice(index,1);
+			}		
+			function addTextField(){	
+				if(textFields.length == 5)
+					return;
+								
+					var form = document.getElementsByTagName('form')[0],
+					input = document.createElement('input');
+					input.setAttribute('type', 'text');
+					input.setAttribute('placeholder', 'Search');
+					input.setAttribute('id', 'tb' + textboxnum);
+					input.setAttribute('class', 'textfield');
+					form.appendChild(input);
+					
+					textFields.push("tb" + textboxnum);
+					
+					inputDelete = document.createElement('input');
+					inputDelete.setAttribute('type', 'button');
+					inputDelete.setAttribute('value', '-');
+					inputDelete.setAttribute('id', 'deltb' + textboxnum);
+					inputDelete.setAttribute('class', 'textfieldDelete');
+					inputDelete.setAttribute('onClick', 'deleteTextField(this)');
+					form.appendChild(inputDelete);
+					
+					textboxnum++;
+			}
+			function getPhotos(){
+				constructSearch();
+				document.getElementById('search').src = '[ajax-loader.gif]';
+				newScript = document.createElement('script');
+				request = "https://www.flickr.com/services/rest/?";
+				request += "method=flickr.photos.search";
+				request += "&per_page=100";
+				request += "&api_key=3ee650ad5d127cfa65170ad9244f3af6";
+				request += "&tags=";
+				request += searchTerm;
+				request += "&format=json";
+				request += "&tag_mode=all";
+				request += "&extras=url_s+url_l";
+				request += "&lat=" + lat;
+				request += "&lon=" + lon;
+				newScript.setAttribute('src',request);
+				document.getElementsByTagName('head')[0].appendChild(newScript);
+			}		
+			function mapRequest(){
+			var c = document.getElementById("counties");
+			var selCounty = c.options[c.selectedIndex].value;
+			var county = selCounty.substring(0, selCounty.indexOf(","));
+			var country = selCounty.substring(selCounty.indexOf(",")+1, selCounty.length);
+			
+			if(country == "Ireland"){
+				country = "IE";
+			}
+			else{
+				country = "UK";
+			}			
+			if(county == "Kerry"){
+				county = "Killarney";
+			}
+			if(county == "Down"){
+				county = "Down, Northern Ireland";
+			}
+			if(county == "Derry"){
+				county = "Londonderry Derry";
+			}
+			var url = "http://www.mapquestapi.com/geocoding/v1/address?key=5n11hOfZZNUPz2JEixos2Mq47yZq5KSR&location=" + county + "," + country;
+			
+			$.ajax({
+				url: url,
+				dataType: 'jsonp',
+				success: function(json) {
+
+				lat = json.results[0].locations[0].latLng.lat
+				lon = json.results[0].locations[0].latLng.lng
+
+				myMap();
+				document.getElementById("googleMap").style.visibility="visible";
+				}
+			});
+		}
+			function jsonFlickrApi(images){
+			imageArrayCar = [];
+			imageArrayMain = [];
+			max = 60;
+			try{
+				for (i = 0; i <= max; i++){
+					url = "http://farm" + images.photos.photo[i].farm ;
+					url += ".static.flickr.com/" ;
+					url += images.photos.photo[i].server + "/";
+					url += images.photos.photo[i].id + "_";
+					url += images.photos.photo[i].secret;
+					url += "_z.jpg"
+					var myImage = new Image();
+					myImage.src = url;
+					picw = myImage.naturalWidth;
+					pich = myImage.naturalHeight;
+					if(picw > pich){
+						classCar = "landscape";
+						classMain = "mainLandscape";
+						imageArrayCar.push(" <img src = " + url + " class='landscape'> ");
+						imageArrayMain.push(" <img src = " + url + " class='mainLandscape'> ");
+					}
+					else if(picw < pich){
+						classCar = "portrait";
+						classMain = "mainPortrait";
+						imageArrayCar.push(" <img src = " + url + " class='portrait'> ");
+						imageArrayMain.push(" <img src = " + url + " class='mainPortrait'> ");
+					}
+					else if(picw == pich){
+						classCar = "square";
+						classMain = "mainSquare";
+						imageArrayCar.push(" <img src = " + url + " class='square'> ");
+						imageArrayMain.push(" <img src = " + url + " class='mainSquare'> ");	
+					}
+				}
+				document.getElementById('right').innerHTML = imageArrayCar[imageNum+1];
+				document.getElementById('middle').innerHTML = imageArrayCar[imageNum];
+				if(imageNum-1 != -1)
+					document.getElementById('left').innerHTML = imageArrayCar[imageNum-1];
+				document.getElementById('Main').innerHTML = imageArrayMain[imageNum];
+				getPhotos(); 
+			}
+			catch(error) {
+				document.getElementById('Main').innerHTML = " <p class='errorMessage'>No Results</p> ";
+				document.getElementById('right').innerHTML = "";
+				document.getElementById('middle').innerHTML = "";
+				document.getElementById('left').innerHTML = "";
+			}
+		}				
+			document.onkeydown = function(e) {
+   			e = e || window.event;
+    		switch(e.which || e.keyCode) {
+				case 37: // left
+				PrevImage();
+				break;
+				
+				case 39: // right
+				NextImage();
+				break;
+		
+
+        		default: return;
+				}
+    	e.preventDefault();
+	}
+			function NextImage(){
+			if(imageNum == max)
+				imageNum = 0;
+			imageNum++;
+			document.getElementById('right').innerHTML = imageArrayCar[imageNum-1];
+			document.getElementById('middle').innerHTML = imageArrayCar[imageNum];
+			document.getElementById('left').innerHTML = imageArrayCar[imageNum+1];	
+			document.getElementById('Main').innerHTML = imageArrayMain[imageNum];
+		}		
+			function PrevImage(){
+			if(imageNum == 0)
+				imageNum = max;
+			imageNum--;
+			document.getElementById('right').innerHTML = imageArrayCar[imageNum-1];
+			document.getElementById('middle').innerHTML = imageArrayCar[imageNum];
+			document.getElementById('left').innerHTML = imageArrayCar[imageNum+1];
+			document.getElementById('Main').innerHTML = imageArrayMain[imageNum];
+		}
+		</script>
+    </body>
+</html>
